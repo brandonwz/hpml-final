@@ -1,0 +1,4 @@
+[ZoneTransfer]
+ZoneId=3
+ReferrerUrl=https://huggingface.co/datasets/lmsys/toxic-chat/tree/main/data/0124
+HostUrl=https://huggingface.co/datasets/lmsys/toxic-chat/resolve/main/data/0124/toxic-chat_annotation_test.csv?download=true
