@@ -139,6 +139,7 @@ def append_str_prefix(x, prefix):
 def move_embed(model, device):
     if isinstance(model, LlamaForCausalLM):
         model.model.embed_tokens = model.model.embed_tokens.to(device)
+        model.model.rotary_emb = model.model.rotary_emb.to(device)
     elif isinstance(model, OPTForCausalLM):
         model.model.decoder.embed_tokens = model.model.decoder.embed_tokens.to(device)
         model.model.decoder.embed_positions = model.model.decoder.embed_positions.to(device)
