@@ -1,7 +1,5 @@
 **/__pycache__/
 
-quantization/clip_cache/
-
 test/gsm8k/preds/
 test/humaneval/preds/
 
