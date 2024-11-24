@@ -1,5 +1,6 @@
 # hpml-final
 
+### eval Llama-Guard-3-1B model with mps:
 $ cd eval
 $ huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir Llama-Guard-3-1B
 $ python eval.py --model 1B-BF16 --path Llama-Guard-3-1B
@@ -30,11 +31,23 @@ nvidia-smi
 7) sh train.sh ../data/generation/datasets/llama-guard-3-1b/toxicchat_T0.7_N1024_S42_3000.json save log 1 <p>
 
 ### To overcome the CUDA capability issue:
-#### NVIDIA H100 80GB HBM3 with CUDA capability sm_90 is not compatible with the current PyTorch installation.
-#### The current PyTorch install supports CUDA capabilities sm_37 sm_50 sm_60 sm_70 sm_75 sm_80 sm_86.
-pip3 install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url [https://download.pytorch.org/whl/test/cu121
+```
+NVIDIA H100 80GB HBM3 with CUDA capability sm_90 is not compatible with the current PyTorch installation.
+The current PyTorch install supports CUDA capabilities sm_37 sm_50 sm_60 sm_70 sm_75 sm_80 sm_86.
+```
+Upgrade the torch version as:
+```
+pip3 install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/test/cu121
+```
 
 ### To overcome the following signature issue:
-#### TypeError: KDTrainer.compute_loss() got an unexpected keyword argument 'num_items_in_batch'
-#### replace compute_loss(self, model, inputs, return_outputs=False) in mytrainer.py with
+```
+TypeError: KDTrainer.compute_loss() got an unexpected keyword argument 'num_items_in_batch'
+```
+Replace compute_loss(self, model, inputs, return_outputs=False) in mytrainer.py with:
+```
 compute_loss(self, model, inputs, num_items_in_batch=None, return_outputs=False)
+```
+
+### The output result by using Lambda Labs GPU gpu_1x_h100_sxm5
+
