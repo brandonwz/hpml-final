@@ -33,6 +33,7 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, use_dummy_
     prompts = None
     labels = None
     if model_type == "1B-BF16":
+        print("hi")
         if use_dummy_data:
             prompts, labels = get_preprocessed_dummy_prompts_and_labels(tokenizer)
         else:
@@ -59,7 +60,7 @@ def eval_and_bench_model(model, tokenizer, prompts, labels):
     for i in range(len(prompts)):
         input_ids = prompts[i]
         start = time.perf_counter()
-        output = model.generate(input_ids=input_ids, max_new_tokens=20, pad_token_id=0)
+        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
         end = time.perf_counter()
 
         total_time_s += end - start
@@ -100,10 +101,11 @@ if __name__=='__main__':
 
     model, tokenizer = load_model_and_tokenizer(args.model, args.path, args.w_bit, args.load_quant, args.original_model)
     model = model.to(DEVICE)
+    print(model)
 
     original_tokenizer = None
     if args.original_model:
         original_tokenizer = AutoTokenizer.from_pretrained(args.original_model)
-    prompts, labels = get_prompts_and_labels(model, tokenizer, original_tokenizer, args.dummy)
+    prompts, labels = get_prompts_and_labels(args.model, tokenizer, original_tokenizer, args.dummy)
 
     eval_and_bench_model(model, tokenizer, prompts, labels)

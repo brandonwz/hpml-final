@@ -7,7 +7,7 @@ from transformers.models.llama.modeling_llama import LlamaMLP
 
 import awq_inference_engine
 import sys
-sys.path.append("/home/brandon/hpml/hpmlfinal/hpml-final/BitDistiller-Fork/quantization")
+sys.path.append("/home/brandon/hpml/hpmlfinal/hpmlfin/hpml-final/BitDistiller-Fork/quantization")
 try:
     from triton_kernels import quant_matmul_v2, quant_gemv_v2
     USE_TRITON = True
