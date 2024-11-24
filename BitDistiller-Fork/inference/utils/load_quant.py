@@ -7,11 +7,13 @@ import torch
 import torch.nn as nn
 from transformers import AutoModelForCausalLM
 from accelerate import init_empty_weights, load_checkpoint_and_dispatch
-from awq.quantize.quantizer import real_quantize_model_weight
-from awq.quantize.qmodule import WQLinear
+import sys
+sys.path.append("../")
+from quantization.quantizer import real_quantize_model_weight
+from quantization.qmodule import WQLinear
 from tqdm import tqdm
 
-import tinychat.utils.constants
+#import tinychat.utils.constants
 
 
 def mem_efficient_load_checkpoint(
@@ -56,29 +58,21 @@ def load_awq_model(model, checkpoint, w_bit, group_size, device):
         model.config.tie_encoder_decoder = False
     if hasattr(model.config, "tie_word_embeddings"):
         model.config.tie_word_embeddings = False
-    if tinychat.utils.constants.mem_efficient_load:
-        assert os.path.isdir(
-            checkpoint
-        ), "You are in mem_efficient_load mode. \n Please set --load_quant the path to the folder containing all checkpoint files."
-        model = mem_efficient_load_checkpoint(
+
+    pbar = tqdm(range(1))
+    pbar.set_description("Loading checkpoint")
+    for i in pbar:
+        model = load_checkpoint_and_dispatch(
             model,
             checkpoint,
+            no_split_module_classes=[
+                "OPTDecoderLayer",
+                "LlamaDecoderLayer",
+                "BloomBlock",
+                "MPTBlock",
+                "DecoderLayer",
+            ],
         ).to(device)
-    else:
-        pbar = tqdm(range(1))
-        pbar.set_description("Loading checkpoint")
-        for i in pbar:
-            model = load_checkpoint_and_dispatch(
-                model,
-                checkpoint,
-                no_split_module_classes=[
-                    "OPTDecoderLayer",
-                    "LlamaDecoderLayer",
-                    "BloomBlock",
-                    "MPTBlock",
-                    "DecoderLayer",
-                ],
-            ).to(device)
     return model
 
 
@@ -134,25 +128,25 @@ def load_awq_llama_fast(model, checkpoint, w_bit, group_size, device):
     make_quant_linear(model, layers, w_bit, group_size, device)
     del layers
 
-    if tinychat.utils.constants.mem_efficient_load:
-        # TODO: mem-efficient load for llama
-        assert os.path.isdir(
-            checkpoint
-        ), "You are in mem_efficient_load mode. \n Please set --load_quant the path to the folder containing all checkpoint files."
-        model = mem_efficient_load_checkpoint(
-            model,
-            checkpoint,
-        )
-    else:
-        pbar = tqdm(range(1))
-        pbar.set_description("Loading checkpoint")
-        for i in pbar:
-            if checkpoint.endswith(".safetensors"):
-                from safetensors.torch import load_file as safe_load
+    # if tinychat.utils.constants.mem_efficient_load:
+    #     # TODO: mem-efficient load for llama
+    #     assert os.path.isdir(
+    #         checkpoint
+    #     ), "You are in mem_efficient_load mode. \n Please set --load_quant the path to the folder containing all checkpoint files."
+    #     model = mem_efficient_load_checkpoint(
+    #         model,
+    #         checkpoint,
+    #     )
+    # else:
+    pbar = tqdm(range(1))
+    pbar.set_description("Loading checkpoint")
+    for i in pbar:
+        if checkpoint.endswith(".safetensors"):
+            from safetensors.torch import load_file as safe_load
 
-                model.load_state_dict(safe_load(checkpoint))
-            else:
-                model.load_state_dict(torch.load(checkpoint))
+            model.load_state_dict(safe_load(checkpoint))
+        else:
+            model.load_state_dict(torch.load(checkpoint))
 
     # autotune_warmup(model)
 

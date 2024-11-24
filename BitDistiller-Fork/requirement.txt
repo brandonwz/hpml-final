@@ -1,5 +1,3 @@
-numpy<2.0
-
 transformers
 datasets
 deepspeed
@@ -24,4 +22,3 @@ zstandard
 bitsandbytes
 peft
 fraction
-

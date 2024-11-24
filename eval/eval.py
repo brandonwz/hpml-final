@@ -6,11 +6,14 @@ import time
 from constants import DEVICE, OUTPUT_OFFSET, SAFE_STR, UNSAFE_STR, DBG, MAX_EVAL_ITERATIONS
 
 from preprocessor import get_preprocessed_dummy_prompts_and_labels, get_preprocessed_toxic_chat_data
+from test_quant import get_int2_model
 
-def load_model_and_tokenizer(model_type, path):
+def load_model_and_tokenizer(model_type, path, w_bit, load_quant, original_model):
     model = None
     tokenizer = None
     if model_type == "1B-BF16":
+        if w_bit != None or load_quant != None or original_model != None:
+            print("Warning: either w_bit, load_quant, or original_model was configured for an unsupported model type. Ignoring those settings.")
         model = AutoModelForCausalLM.from_pretrained(
                     path,
                     load_in_4bit=False,
@@ -19,10 +22,32 @@ def load_model_and_tokenizer(model_type, path):
                     device_map=DEVICE
                 )
         tokenizer = AutoTokenizer.from_pretrained(path)
+    elif model_type == "1B-INT2":
+        model, tokenizer = get_int2_model(path, w_bit, load_quant)
     else:
         raise Exception("Model type unsupported, exiting.")
 
     return model, tokenizer
+
+def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, use_dummy_data):
+    prompts = None
+    labels = None
+    if model_type == "1B-BF16":
+        if use_dummy_data:
+            prompts, labels = get_preprocessed_dummy_prompts_and_labels(tokenizer)
+        else:
+            prompts, labels = get_preprocessed_toxic_chat_data(tokenizer)
+    else:
+        if use_dummy_data:
+            prompts, labels = get_preprocessed_dummy_prompts_and_labels(original_tokenizer, tokenize=False)
+        else:
+            prompts, labels = get_preprocessed_toxic_chat_data(original_tokenizer, tokenize=False)
+
+        # We use the original llama guard 3 1b tokenizer to get the prompts in text form and then encode
+        # them with the tokenizer from the quantized model
+        for i in range(len(prompts)):
+            prompts[i] = tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE)
+    return prompts, labels
 
 # TODO: add some sort of evaluation metric,
 # e.g. binary accuracy or f1
@@ -63,23 +88,22 @@ def eval_and_bench_model(model, tokenizer, prompts, labels):
 
 if __name__=='__main__':
     parser = argparse.ArgumentParser(description="model evaluation parser")
-    parser.add_argument("--model", help="which model to use. options: 1B-BF16")
+    parser.add_argument("--model", help="which model to use. options: 1B-BF16, 1B-INT2")
     parser.add_argument("--path", help="model path")
     parser.add_argument("--dummy", help="use dummy dataset", action="store_true")
+    # Only relevant if --model is 1B-INT2
+    parser.add_argument("--w_bit", type=int, default=None)
+    parser.add_argument("--load_quant", type=str, default=None, help="load quantized model")
+    parser.add_argument("--original_model", type=str, default=None, help="original model path (for the tokenizer)")
 
-    train_args = parser.parse_args()
+    args = parser.parse_args()
 
-    model_type = train_args.model
-    path = train_args.path
-    use_dummy_data = train_args.dummy
+    model, tokenizer = load_model_and_tokenizer(args.model, args.path, args.w_bit, args.load_quant, args.original_model)
+    model = model.to(DEVICE)
 
-    model, tokenizer = load_model_and_tokenizer(model_type, path)
-
-    prompts = None
-    labels = None
-    if use_dummy_data:
-        prompts, labels = get_preprocessed_dummy_prompts_and_labels(tokenizer)
-    else:
-        prompts, labels = get_preprocessed_toxic_chat_data(tokenizer)
+    original_tokenizer = None
+    if args.original_model:
+        original_tokenizer = AutoTokenizer.from_pretrained(args.original_model)
+    prompts, labels = get_prompts_and_labels(model, tokenizer, original_tokenizer, args.dummy)
 
     eval_and_bench_model(model, tokenizer, prompts, labels)

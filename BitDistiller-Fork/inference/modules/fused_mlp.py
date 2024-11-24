@@ -7,7 +7,7 @@ from transformers.models.llama.modeling_llama import LlamaMLP
 
 import awq_inference_engine
 import sys
-sys.path.append("/home/dudayou/dayou/repo/llm-awq/awq/quantize")
+sys.path.append("/home/brandon/hpml/hpmlfinal/hpml-final/BitDistiller-Fork/quantization")
 try:
     from triton_kernels import quant_matmul_v2, quant_gemv_v2
     USE_TRITON = True
@@ -44,6 +44,8 @@ class QuantLlamaMLP(nn.Module):
     def our_llama_mlp(self, x):
         out_shape = x.shape[:-1] + (self.intermediate_size,)
         x = x.reshape(-1, x.shape[-1])
+        gate_output = None
+        up_output = None
 
         if x.shape[0] <= 8:
             gate_output = awq_inference_engine.gemv_forward_cuda(
