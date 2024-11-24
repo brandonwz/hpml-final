@@ -20,11 +20,21 @@ nvidia-smi
 3) ssh -i <path to pem>/my-ssh-key.pem ubuntu@<gpu ip> <p>
 
 ### setup on lambda labs gpu:
-1) pip install -U "huggingface_hub[cli]" <p>
-2) huggingface-cli login <p>
-3) huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir Llama-Guard-3-1B <p>
-4) unzip hpml-final.zip <p>
-5) cd hpml-final/BitDistiller-Fork/train <p>
-6) pip install -r ../requirement.txt <p>
+0) python -m venv venv; . venv/bin/activate <p>
+1) unzip hpml-final.zip <p>
+2) cd hpml-final/BitDistiller-Fork/train <p>
+3) pip install -r ../requirement.txt <p>
+4) pip install -U "huggingface_hub[cli]" <p>
+5) huggingface-cli login <p>
+6) huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir /home/ubuntu/Llama-Guard-3-1B <p>
 7) sh train.sh ../data/generation/datasets/llama-guard-3-1b/toxicchat_T0.7_N1024_S42_3000.json save log 1 <p>
 
+### To overcome the CUDA capability issue:
+#### NVIDIA H100 80GB HBM3 with CUDA capability sm_90 is not compatible with the current PyTorch installation.
+#### The current PyTorch install supports CUDA capabilities sm_37 sm_50 sm_60 sm_70 sm_75 sm_80 sm_86.
+pip3 install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url [https://download.pytorch.org/whl/test/cu121
+
+### To overcome the following signature issue:
+#### TypeError: KDTrainer.compute_loss() got an unexpected keyword argument 'num_items_in_batch'
+#### replace compute_loss(self, model, inputs, return_outputs=False) in mytrainer.py with
+compute_loss(self, model, inputs, num_items_in_batch=None, return_outputs=False)
