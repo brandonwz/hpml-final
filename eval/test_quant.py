@@ -1,3 +1,7 @@
+"""
+Adapted from https://github.com/mit-han-lab/llm-awq/blob/main/awq/entry.py
+"""
+
 import time
 import numpy as np
 import torch
