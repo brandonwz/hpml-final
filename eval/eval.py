@@ -61,8 +61,12 @@ def eval_and_bench_model(model, tokenizer, prompts, labels):
     tokens = 0
     for i in tqdm.tqdm(range(len(prompts))):
         input_ids = prompts[i]
+        if DEVICE == "cuda":
+            torch.cuda.synchronize()
         start = time.perf_counter()
         output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0, use_cache = True)
+        if DEVICE == "cuda":
+            torch.cuda.synchronize()
         end = time.perf_counter()
 
         total_time_s += end - start
