@@ -110,7 +110,6 @@ def get_int2_model(model_path, w_bit, load_quant):
     )
     # Dispatch model
     model = simple_dispatch_model(model, device_map=device_map)
-    model = make_fused_mlp(model)
 
     model.eval()
 

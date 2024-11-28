@@ -2,6 +2,7 @@ import argparse
 from transformers import AutoTokenizer, AutoModelForCausalLM
 import torch
 import time
+import tqdm
 
 from constants import DEVICE, OUTPUT_OFFSET, SAFE_STR, UNSAFE_STR, DBG, MAX_EVAL_ITERATIONS
 
@@ -57,16 +58,18 @@ def eval_and_bench_model(model, tokenizer, prompts, labels):
     total_time_s = 0.0
     iters = 0
     correct = 0
-    for i in range(len(prompts)):
+    tokens = 0
+    for i in tqdm.tqdm(range(len(prompts))):
         input_ids = prompts[i]
         start = time.perf_counter()
-        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0)
+        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0, use_cache = True)
         end = time.perf_counter()
 
         total_time_s += end - start
 
         prompt_len = input_ids.shape[-1]
         output_decoded = tokenizer.decode(output[0][prompt_len:])
+        tokens += len(output_decoded)
         output_trimmed = output_decoded[OUTPUT_OFFSET:]
 
         if output_trimmed[0:len(SAFE_STR)] == SAFE_STR:
@@ -84,7 +87,7 @@ def eval_and_bench_model(model, tokenizer, prompts, labels):
             if iters == MAX_EVAL_ITERATIONS:
                 break
 
-    print("Avg Time Per Sample (s):", total_time_s / len(prompts))
+    print("Avg Time Per Token (s):", total_time_s / tokens)
     print("Binary Accuracy:", correct / iters)
 
 if __name__=='__main__':

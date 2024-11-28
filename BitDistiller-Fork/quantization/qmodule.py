@@ -150,7 +150,7 @@ class WQLinear(nn.Module):
         out_shape = x.shape[:-1] + (self.out_features, )
         inputs = x.reshape(-1, x.shape[-1])
         # trans = lambda x: x.T.contiguous()
-        if inputs.shape[0] > 1:
+        if inputs.shape[0] >= 1:
             if USE_TRITON:
                 out = quant_matmul_v2(inputs, 
                 self.qweight.T.contiguous(), 
