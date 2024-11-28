@@ -34,7 +34,6 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, use_dummy_
     prompts = None
     labels = None
     if model_type == "1B-BF16":
-        print("hi")
         if use_dummy_data:
             prompts, labels = get_preprocessed_dummy_prompts_and_labels(tokenizer)
         else:
@@ -51,20 +50,30 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, use_dummy_
             prompts[i] = tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE)
     return prompts, labels
 
-# TODO: add some sort of evaluation metric,
-# e.g. binary accuracy or f1
-def eval_and_bench_model(model, tokenizer, prompts, labels):
+def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
     model.eval()
     total_time_s = 0.0
     iters = 0
     correct = 0
     tokens = 0
-    for i in tqdm.tqdm(range(len(prompts))):
+
+    for i in tqdm.tqdm(range(100), "warmup"):
+        input_ids = prompts[0]
+        config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True}
+        if lookup:
+            config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True, 'do_sample':True, 'temperature':0.9, 'prompt_lookup_num_tokens':3}
+        output = model.generate(**config)
+
+    for i in tqdm.tqdm(range(len(prompts)), "eval"):
         input_ids = prompts[i]
+        config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True}
+        if lookup:
+            config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True, 'do_sample':True, 'temperature':0.9, 'prompt_lookup_num_tokens':3}
         if DEVICE == "cuda":
             torch.cuda.synchronize()
         start = time.perf_counter()
-        output = model.generate(input_ids=input_ids, max_new_tokens=100, pad_token_id=0, use_cache = True)
+        output = model.generate(**config)
+
         if DEVICE == "cuda":
             torch.cuda.synchronize()
         end = time.perf_counter()
@@ -101,6 +110,7 @@ if __name__=='__main__':
     parser.add_argument("--dummy", help="use dummy dataset", action="store_true")
     # Only relevant if --model is 1B-INT2
     parser.add_argument("--w_bit", type=int, default=None)
+    parser.add_argument("--lookup", action="store_true")
     parser.add_argument("--load_quant", type=str, default=None, help="load quantized model")
     parser.add_argument("--original_model", type=str, default=None, help="original model path (for the tokenizer)")
 
@@ -115,4 +125,4 @@ if __name__=='__main__':
         original_tokenizer = AutoTokenizer.from_pretrained(args.original_model)
     prompts, labels = get_prompts_and_labels(args.model, tokenizer, original_tokenizer, args.dummy)
 
-    eval_and_bench_model(model, tokenizer, prompts, labels)
+    eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
