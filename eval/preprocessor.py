@@ -36,6 +36,7 @@ def preprocess_prompts(tokenizer, prompts, tokenize=True):
                     ]
             }
         ]
+        preprocessed_prompt = None
         if tokenize:
             preprocessed_prompt = tokenizer.apply_chat_template(
                                             wrapped_prompt,
