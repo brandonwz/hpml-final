@@ -30,7 +30,7 @@ nvidia-smi
 4) pip install -U "huggingface_hub[cli]" <p>
 5) huggingface-cli login <p>
 6) huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir /home/ubuntu/Llama-Guard-3-1B <p>
-7) sh train.sh ../data/generation/datasets/llama-guard-3-1b/toxicchat_T0.7_N1024_S42_3000.json save log 1 <p>
+7) sh train.sh ../data/generation/datasets/llama-guard-3-1b/toxicchat_T0.7_N1024_S42_3000.json save log 2 <p>
 
 ### To overcome the CUDA capability issue:
 ```
@@ -52,4 +52,23 @@ compute_loss(self, model, inputs, num_items_in_batch=None, return_outputs=False)
 ```
 
 ### The output result by using Lambda Labs GPU gpu_1x_h100_sxm5
+```
+result/output_llama-guard-3-1b
+```
 
+### Training with clip hf-llama3-2-1b
+
+Modify train.sh with
+```
+--clip /home/ubuntu/hpml-final/BitDistiller-Fork/quantization/clip_cache/hf-llama3-2-1b/int2-g128.pt
+```
+
+With the following 
+```
+sh train.sh ../data/generation/datasets/hf-llama-3-2-1b/wikitext_T0.7_N1024_S42_3000.json save log 2
+
+
+### The output result by using Lambda Labs GPU gpu_1x_h100_pcie
+```
+result/output_llama-3-2-1b
+```
