@@ -68,7 +68,7 @@ With the following
 sh train.sh ../data/generation/datasets/hf-llama-3-2-1b/wikitext_T0.7_N1024_S42_3000.json save log 2
 
 
-### The output result by using Lambda Labs GPU gpu_1x_h100_pcie
+### The output result for clip hf-llama3-2-1b by using Lambda Labs GPU gpu_1x_h100_pcie
 ```
 result/output_llama-3-2-1b
 ```
