@@ -42,15 +42,6 @@ Upgrade the torch version as:
 pip3 install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/test/cu121
 ```
 
-### To overcome the following signature issue:
-```
-TypeError: KDTrainer.compute_loss() got an unexpected keyword argument 'num_items_in_batch'
-```
-Replace compute_loss(self, model, inputs, return_outputs=False) in mytrainer.py with:
-```
-compute_loss(self, model, inputs, num_items_in_batch=None, return_outputs=False)
-```
-
 ### The output result by using Lambda Labs GPU gpu_1x_h100_sxm5
 ```
 result/output_llama-guard-3-1b
@@ -71,4 +62,10 @@ sh train.sh ../data/generation/datasets/hf-llama-3-2-1b/wikitext_T0.7_N1024_S42_
 ### The output result for clip hf-llama3-2-1b by using Lambda Labs GPU gpu_1x_h100_pcie
 ```
 result/output_hf-llama-3-2-1b
+```
+
+### Evaluating Quantized Model Example
+
+```
+CUDA_VISIBLE_DEVICES=0 python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dummy --lookup
 ```
