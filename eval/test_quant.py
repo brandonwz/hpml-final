@@ -10,7 +10,7 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, modeli
 import sys
 sys.path.append("../BitDistiller-Fork")
 from quantization.quantizer import real_quantize_model_weight
-from inference.modules.fused_mlp import make_fused_mlp
+#from inference.modules.fused_mlp import make_fused_mlp
 
 import accelerate
 from accelerate import (

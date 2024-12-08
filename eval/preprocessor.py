@@ -22,6 +22,20 @@ def get_toxic_chat_data():
 
     return inputs.tolist(), outputs.tolist()
 
+def get_mutox_data():
+    test_csv = pd.read_csv("./data/mutox/mutox.tsv", sep='\t')
+    test_csv_eng = test_csv[test_csv.lang == 'eng']  # only include english
+    inputs = test_csv_eng["audio_file_transcript"]
+    outputs = test_csv_eng["label"]
+
+    return inputs.tolist(), outputs.tolist()
+
+def get_ifeval_data():
+    df = pd.read_json("./../instruction_following_eval/data/input_data.jsonl", lines=True)
+    inputs = df["prompt"]
+
+    return inputs.tolist()
+
 def preprocess_prompts(tokenizer, prompts, tokenize=True):
     preprocessed_prompts = []
     for prompt in prompts:
@@ -56,6 +70,17 @@ def get_preprocessed_toxic_chat_data(tokenizer, tokenize=True):
     prompts, labels = get_toxic_chat_data()
     preprocessed_prompts = preprocess_prompts(tokenizer, prompts, tokenize)
     return preprocessed_prompts, labels
+
+def get_preprocessed_mutox_data(tokenizer, tokenize=True):
+    prompts, labels = get_mutox_data()
+    preprocessed_prompts = preprocess_prompts(tokenizer, prompts, tokenize)
+    return preprocessed_prompts, labels
+
+def get_preprocessed_ifeval_data(tokenizer, tokenize=True):
+    prompts = get_ifeval_data()
+    for i in range(len(prompts)):
+        prompts[i] = tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE)
+    return prompts
 
 def get_preprocessed_dummy_prompts_and_labels(tokenizer, tokenize=True):
     prompts, labels = get_dummy_prompts()

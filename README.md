@@ -1,13 +1,29 @@
 # hpml-final
 
-### eval Llama-Guard-3-1B model with mps:
-$ cd eval
-$ huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir Llama-Guard-3-1B
-$ python eval.py --model 1B-BF16 --path Llama-Guard-3-1B
-Output result is as follows:
+### eval toxic data with Llama-Guard-3-1B model and mps:
+0) $ cd eval <p>
+1) $ huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir Llama-Guard-3-1B <p>
+2) $ python eval.py --model 1B-BF16 --path Llama-Guard-3-1B --dataset toxic<p>
+
+Output result is located at and as follows:
 ```
-Avg Time Per Sample (s): 0.5747905081089929
-Binary Accuracy: 0.8341530592169978
+eval/result/Llama-Guard-3-1B_toxic
+
+Avg Time Per Token (s): 0.03453764048901507
+Binary Accuracy: 0.8373008066102695
+```
+
+### eval MutTox data https://github.com/facebookresearch/seamless_communication/tree/main/src/seamless_communication/cli/toxicity/mutox with Llama-Guard-3-1B model and mps:
+0) $ cd eval <p>
+1) $ huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir Llama-Guard-3-1B <p>
+2) $ python eval.py --model 1B-BF16 --path Llama-Guard-3-1B --dataset mutox<p>
+
+Output result is located at and as follows:
+```
+eval/result/Llama-Guard-3-1B_mutox
+
+Avg Time Per Token (s): 0.028867472566967655
+Binary Accuracy: 0.7355110642781876
 ```
 
 ### monitor gpu:
