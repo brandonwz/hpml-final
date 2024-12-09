@@ -85,3 +85,35 @@ result/output_hf-llama-3-2-1b
 ```
 CUDA_VISIBLE_DEVICES=0 python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dummy --lookup
 ```
+
+### eval ifeval data with Llama-3.2-1B-Instruct model and mps:
+0) $ cd eval <p>
+1) $ huggingface-cli download meta-llama/Llama-3.2-1B-Instruct --local-dir Llama-3.2-1B-Instruct <p>
+2) $ python eval.py --model 1B-BF16 --path Llama-3.2-1B-Instruct --dataset ifeval --response result/Llama-3.2-1B-Instruct_ifeval/response.jsonl --instruct <p>
+3) $ cd .. <p>
+4) $ python3 -m instruction_following_eval.evaluation_main --input_data=./instruction_following_eval/data/input_data.jsonl --input_response_data=./eval/result/Llama-3.2-1B-Instruct_ifeval/response.jsonl --output_dir=./eval/result/Llama-3.2-1B-Instruct_ifeval/
+
+Output result is located at and as follows:
+```
+eval/result/Llama-3.2-1B-Instruct_ifeval
+
+Avg Time Per Token (s): 0.012948842507713415
+Accuracy scores of keywords: 0.5214723926380368 
+```
+
+### eval ifeval data with Llama-3.2-1B model and mps:
+0) $ cd eval <p>
+1) $ huggingface-cli download meta-llama/Llama-3.2-1B --local-dir Llama-3.2-1B <p>
+2) $ python eval.py --model 1B-BF16 --path Llama-3.2-1B --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl <p>
+3) $ cd .. <p>
+4) $ python3 -m instruction_following_eval.evaluation_main --input_data=./instruction_following_eval/data/input_data.jsonl --input_response_data=./eval/result/Llama-3.2-1B_ifeval/response.jsonl --output_dir=./eval/result/Llama-3.2-1B_ifeval/
+
+Output result is located at and as follows:
+```
+eval/result/Llama-3.2-1B_ifeval
+
+Avg Time Per Token (s): 0.011015437406368827
+Accuracy scores of keywords: 0.4539877300613497
+```
+
+

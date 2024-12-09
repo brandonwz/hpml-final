@@ -32,7 +32,7 @@ def load_model_and_tokenizer(model_type, path, w_bit, load_quant, original_model
 
     return model, tokenizer
 
-def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset):
+def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, instruct):
     prompts = None
     labels = None
     if model_type == "1B-BF16":
@@ -41,7 +41,7 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset):
         elif dataset == 'mutox':
             prompts, labels = get_preprocessed_mutox_data(tokenizer)
         elif dataset == 'ifeval':
-            prompts, labels = get_preprocessed_ifeval_data(tokenizer)
+            prompts, labels = get_preprocessed_ifeval_data(tokenizer, instruct)
         else:
             prompts, labels = get_preprocessed_toxic_chat_data(tokenizer)
     else:
@@ -50,7 +50,7 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset):
         elif dataset == 'mutox':
             prompts, labels = get_preprocessed_mutox_data(original_tokenizer, tokenize=False)
         elif dataset == 'ifeval':
-            prompts, labels = get_preprocessed_ifeval_data(original_tokenizer, tokenize=False)
+            prompts, labels = get_preprocessed_ifeval_data(original_tokenizer, instruct, tokenize=False)
         else:
             prompts, labels = get_preprocessed_toxic_chat_data(original_tokenizer, tokenize=False)
 
@@ -116,7 +116,7 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
     print("Avg Time Per Token (s):", total_time_s / tokens)
     print("Binary Accuracy:", correct / iters)
 
-def generate_response(model, tokenizer, prompts, original_prompts, lookup, response_path):
+def generate_response(model, tokenizer, prompts, original_prompts, lookup, response_path, instruct):
     total_time_s = 0.0
     tokens = 0
 
@@ -147,8 +147,10 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
 
         eot_id = "<|eot_id|>"
 
-        #output_start_idx = prompt_len
-        output_start_idx = prompt_len + 4
+        if instruct:
+            output_start_idx = prompt_len + 4
+        else:
+            output_start_idx = prompt_len
         output_decoded = tokenizer.decode(output[0][output_start_idx:])
         if output_decoded[len(output_decoded)-len(eot_id):len(output_decoded)] == eot_id:
             output_decoded = output_decoded[:len(output_decoded) - len(eot_id)]
@@ -174,6 +176,7 @@ if __name__=='__main__':
     parser.add_argument("--load_quant", type=str, default=None, help="load quantized model")
     parser.add_argument("--original_model", type=str, default=None, help="original model path (for the tokenizer)")
     parser.add_argument("--response", help="response save location")
+    parser.add_argument("--instruct", help="to indicate if the model is an instruct or not", action="store_true")
 
     args = parser.parse_args()
 
@@ -184,11 +187,11 @@ if __name__=='__main__':
     original_tokenizer = None
     if args.original_model:
         original_tokenizer = AutoTokenizer.from_pretrained(args.original_model)
-    prompts, labels = get_prompts_and_labels(args.model, tokenizer, original_tokenizer, args.dataset)
+    prompts, labels = get_prompts_and_labels(args.model, tokenizer, original_tokenizer, args.dataset, args.instruct)
 
     if not args.response:
         eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
     else:
         print(f"generating and saving response at location: {args.response}...")
-        generate_response(model, tokenizer, prompts, labels, args.lookup, args.response)
+        generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct)
 
