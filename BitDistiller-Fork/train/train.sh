@@ -1,4 +1,3 @@
-export MODEL_PATH='/home/brandon/hpml/hpmlfinal/Llama-Guard-3-1B/' #CHANGE TO YOUR PATH
 export SAVE_PATH=$2
 export MASTER_ADDR="localhost"
 export MASTER_PORT="1321"
@@ -37,7 +36,7 @@ deepspeed --num_gpus=1 train.py \
     --train_kd True \
     --kd_loss_type "cakld" \
     --max_train_samples 999999 \
-    --clip /home/brandon/hpml/hpmlfinal/BitDistiller/quantization/clip_cache/hf-llama3-1b/int2-g128.pt #CHANGE TO YOUR PATH WITH THE CLIPPINGS, INCLUDED IN quantization/clip_cache/hf-llama3-1b
+    --clip $CLIP_PATH #CHANGE TO YOUR PATH WITH THE CLIPPINGS, INCLUDED IN quantization/clip_cache/hf-llama3-1b
 
 
 # data_path: the path to the generated toxic chat teacher dataset in data/generation/datasets/llama-guard-3-1b/toxicchat_<suffix>

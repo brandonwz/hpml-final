@@ -30,7 +30,7 @@ Binary Accuracy: 0.7355110642781876
 nvidia-smi
 
 ### py packaging:
-1) zip -r hpml-final.zip  hpml-final -x hpml-final/BitDistiller-Fork/venv/\* -x hpml-final/eval/__pycache__/\* -x hpml-final/eval/Llama-Guard-3-1B/\* -x hpml-final/.idea/\* -x hpml-final/.git/\*
+1) zip -r hpml-final.zip hpml-final -x hpml-final/instruction_following_eval/venv/\* -x hpml-final/eval/__pycache__/\* -x hpml-final/eval/Llama-3.2-1B-Instruct/\* -x hpml-final/eval/Llama-3.2-1B/\* -x hpml-final/eval/Llama-Guard-3-1B/\* -x hpml-final/.idea/\* -x hpml-final/.git/\* -x hpml-final/result/\*
 
 ### scp and ssh with lambda labs:
 0) select "Lauch instance", select the instance type, and create a new file system <p>
@@ -46,7 +46,9 @@ nvidia-smi
 4) pip install -U "huggingface_hub[cli]" <p>
 5) huggingface-cli login <p>
 6) huggingface-cli download meta-llama/Llama-Guard-3-1B  --local-dir /home/ubuntu/Llama-Guard-3-1B <p>
-7) sh train.sh ../data/generation/datasets/llama-guard-3-1b/toxicchat_T0.7_N1024_S42_3000.json save log 2 <p>
+7) export CLIP_PATH=../quantization/clip_cache/hf-llama3-1b/int2-g128.pt <p>
+8) export MODEL_PATH=/home/ubuntu/Llama-Guard-3-1B <p>
+9) sh train.sh ../data/generation/datasets/llama-guard-3-1b/toxicchat_T0.7_N1024_S42_3000.json save log 2 <p>
 
 ### To overcome the CUDA capability issue:
 ```
@@ -63,21 +65,15 @@ pip3 install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url http
 result/output_llama-guard-3-1b
 ```
 
-### Training with clip hf-llama3-2-1b
+### Training with clip hf-llama3-2-1b and model Llama-3.2-1B
+0) huggingface-cli download meta-llama/Llama-3.2-1B --local-dir /home/ubuntu/Llama-3.2-1B <p>
+1) export CLIP_PATH=/home/ubuntu/hpml-final/BitDistiller-Fork/quantization/clip_cache/hf-llama3-2-1b/llama-3-2-int2-g128.pt <p>
+2) export MODEL_PATH=/home/ubuntu/Llama-3.2-1B <p>
+3) sh train.sh ../data/generation/datasets/hf-llama-3-2-1b/wikitext_T0.7_N1024_S42_3000.json save log 2 <p>
 
-Modify train.sh with
+### The output result for clip hf-llama3-2-1b and model Llama-3-2-1B by using Lambda Labs GPU gpu_1x_h100_pcie
 ```
---clip /home/ubuntu/hpml-final/BitDistiller-Fork/quantization/clip_cache/hf-llama3-2-1b/int2-g128.pt
-```
-
-With the following 
-```
-sh train.sh ../data/generation/datasets/hf-llama-3-2-1b/wikitext_T0.7_N1024_S42_3000.json save log 2
-```
-
-### The output result for clip hf-llama3-2-1b by using Lambda Labs GPU gpu_1x_h100_pcie
-```
-result/output_hf-llama-3-2-1b
+result/output_llama-3-2-1b
 ```
 
 ### Evaluating Quantized Model Example
