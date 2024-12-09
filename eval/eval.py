@@ -41,7 +41,7 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset):
         elif dataset == 'mutox':
             prompts, labels = get_preprocessed_mutox_data(tokenizer)
         elif dataset == 'ifeval':
-            prompts = get_preprocessed_ifeval_data(tokenizer)
+            prompts, labels = get_preprocessed_ifeval_data(tokenizer)
         else:
             prompts, labels = get_preprocessed_toxic_chat_data(tokenizer)
     else:
@@ -50,7 +50,7 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset):
         elif dataset == 'mutox':
             prompts, labels = get_preprocessed_mutox_data(original_tokenizer, tokenize=False)
         elif dataset == 'ifeval':
-            prompts = get_preprocessed_ifeval_data(original_tokenizer, tokenize=False)
+            prompts, labels = get_preprocessed_ifeval_data(original_tokenizer, tokenize=False)
         else:
             prompts, labels = get_preprocessed_toxic_chat_data(original_tokenizer, tokenize=False)
 
@@ -116,7 +116,7 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
     print("Avg Time Per Token (s):", total_time_s / tokens)
     print("Binary Accuracy:", correct / iters)
 
-def generate_response(model, tokenizer, prompts, lookup, response_path):
+def generate_response(model, tokenizer, prompts, original_prompts, lookup, response_path):
     total_time_s = 0.0
     tokens = 0
 
@@ -145,15 +145,19 @@ def generate_response(model, tokenizer, prompts, lookup, response_path):
 
         prompt_len = input_ids.shape[-1]
 
-        input_decoded = tokenizer.decode(output[0][1:prompt_len])
-        #print("input_decoded:" + input_decoded)
+        eot_id = "<|eot_id|>"
 
-        output_decoded = tokenizer.decode(output[0][prompt_len:])
+        #output_start_idx = prompt_len
+        output_start_idx = prompt_len + 4
+        output_decoded = tokenizer.decode(output[0][output_start_idx:])
+        if output_decoded[len(output_decoded)-len(eot_id):len(output_decoded)] == eot_id:
+            output_decoded = output_decoded[:len(output_decoded) - len(eot_id)]
+
         tokens += len(output_decoded)
         #print("output_decoded:" + output_decoded)
 
         with open(response_path, 'a') as the_file:
-            data = {"prompt": input_decoded, "response": output_decoded}
+            data = {"prompt": original_prompts[i], "response": output_decoded}
             the_file.write(f"{json.dumps(data)}\n")
 
     print("Avg Time Per Token (s):", total_time_s / tokens)
@@ -186,5 +190,5 @@ if __name__=='__main__':
         eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
     else:
         print(f"generating and saving response at location: {args.response}...")
-        generate_response(model, tokenizer, prompts, args.lookup, args.response)
+        generate_response(model, tokenizer, prompts, labels, args.lookup, args.response)
 

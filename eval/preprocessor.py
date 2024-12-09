@@ -78,9 +78,31 @@ def get_preprocessed_mutox_data(tokenizer, tokenize=True):
 
 def get_preprocessed_ifeval_data(tokenizer, tokenize=True):
     prompts = get_ifeval_data()
-    for i in range(len(prompts)):
-        prompts[i] = tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE)
-    return prompts
+
+    # for i in range(len(prompts)):
+    #     prompts[i] = tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE)
+    #return prompts
+
+    preprocessed_prompts = []
+    for prompt in prompts:
+        wrapped_prompt = [
+            {
+                "role": "user",
+                "content": prompt
+            }
+        ]
+        if tokenize:
+            preprocessed_prompt = tokenizer.apply_chat_template(
+                                            wrapped_prompt,
+                                            return_tensors="pt"
+                                        ).to(DEVICE)
+        else:
+            preprocessed_prompt = tokenizer.apply_chat_template(
+                                            wrapped_prompt,
+                                            tokenize = False
+                                        )
+        preprocessed_prompts.append(preprocessed_prompt)
+    return preprocessed_prompts, prompts
 
 def get_preprocessed_dummy_prompts_and_labels(tokenizer, tokenize=True):
     prompts, labels = get_dummy_prompts()

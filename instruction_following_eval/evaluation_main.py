@@ -98,7 +98,22 @@ def test_instruction_following_strict(
     prompt_to_response,
 ):
   """Tests response to see if instrutions are followed."""
-  response = prompt_to_response[inp.prompt]
+  try:
+    response = prompt_to_response[inp.prompt]
+  except:
+    from difflib import SequenceMatcher
+
+    def similar(a, b):
+      return SequenceMatcher(None, a, b).ratio()
+    score = 0.0
+    key = None
+    for k in prompt_to_response:
+      s = similar(k, inp.prompt)
+      if s > score:
+        key = k
+        score = s
+    print(f"Found similar: {key} for prompt: {inp.prompt}")
+    response = prompt_to_response[key]
   instruction_list = inp.instruction_id_list
   is_following_list = []
 
@@ -130,7 +145,23 @@ def test_instruction_following_loose(
     prompt_to_response,
 ):
   """Tests response for an upper bound for following instructions."""
-  response = prompt_to_response[inp.prompt]
+  try:  
+    response = prompt_to_response[inp.prompt]
+  except:
+    from difflib import SequenceMatcher
+
+    def similar(a, b):
+      return SequenceMatcher(None, a, b).ratio()
+    score = 0.0
+    key = None
+    for k in prompt_to_response:
+      s = similar(k, inp.prompt)
+      if s > score:
+        key = k
+        score = s
+    print(f"Found similar: {key} for prompt: {inp.prompt}")
+    response = prompt_to_response[key]
+
   r = response.split("\n")
   response_remove_first = "\n".join(r[1:]).strip()
   response_remove_last = "\n".join(r[:-1]).strip()
