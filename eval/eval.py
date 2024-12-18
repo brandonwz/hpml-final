@@ -54,7 +54,7 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, i
         else:
             prompts, labels = get_preprocessed_toxic_chat_data(original_tokenizer, tokenize=False)
 
-        # We use the original llama guard 3 1b tokenizer to get the prompts in text form and then encode
+        # We use the original model tokenizer to get the prompts in text form and then encode
         # them with the tokenizer from the quantized model
         for i in range(len(prompts)):
             prompts[i] = tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE)
@@ -70,16 +70,41 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
 
     for i in tqdm.tqdm(range(100), "warmup"):
         input_ids = prompts[0]
-        config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True}
+        config = {
+            'input_ids':input_ids,
+            'max_new_tokens':100,
+            'pad_token_id':0,
+            'use_cache' : True
+        }
         if lookup:
-            config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True, 'do_sample':True, 'temperature':0.9, 'prompt_lookup_num_tokens':3}
+            config = {
+                'input_ids':input_ids,
+                'max_new_tokens':100,
+                'pad_token_id':0,
+                'use_cache' : True,
+                'do_sample':True,
+                'temperature':0.9,
+                'prompt_lookup_num_tokens':3
+            }
         output = model.generate(**config)
 
     for i in tqdm.tqdm(range(len(prompts)), "eval"):
         input_ids = prompts[i]
-        config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True}
+        config = {
+            'input_ids':input_ids,
+            'max_new_tokens':100,
+            'pad_token_id':0,
+            'use_cache' : True
+        }
         if lookup:
-            config = {'input_ids':input_ids, 'max_new_tokens':100, 'pad_token_id':0, 'use_cache' : True, 'do_sample':True, 'temperature':0.9, 'prompt_lookup_num_tokens':3}
+            config = {
+                'input_ids':input_ids,
+                'max_new_tokens':100,
+                'pad_token_id':0,
+                'use_cache' : True,
+                'do_sample':True,
+                'temperature':0.9,
+                'prompt_lookup_num_tokens':3}
         if DEVICE == "cuda":
             torch.cuda.synchronize()
         start = time.perf_counter()
@@ -93,10 +118,8 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
 
         prompt_len = input_ids.shape[-1]
         output_decoded = tokenizer.decode(output[0][prompt_len:])
-        tokens += len(output_decoded)
+        tokens += len(output[0][prompt_len:])
         output_trimmed = output_decoded[OUTPUT_OFFSET:]
-        #print(f"output_trimmed : {output_trimmed}")
-        #print(f"labels[i]: {labels[i]}")
 
         if output_trimmed[0:len(SAFE_STR)] == SAFE_STR:
             if DBG: print("SAFE")
@@ -116,22 +139,77 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
     print("Avg Time Per Token (s):", total_time_s / tokens)
     print("Binary Accuracy:", correct / iters)
 
-def generate_response(model, tokenizer, prompts, original_prompts, lookup, response_path, instruct):
+def generate_response(model, tokenizer, prompts, original_prompts, lookup, response_path, instruct, model_type):
     total_time_s = 0.0
     tokens = 0
 
-    for i in tqdm.tqdm(range(100), "warmup"):
+    final_prompts = []
+    final_decoded = []
+
+    for i in tqdm.tqdm(range(1), "warmup"):
         input_ids = prompts[0]
-        config = {'input_ids':input_ids, 'max_new_tokens': 100, 'pad_token_id':0, 'use_cache' : True}
+        config = {
+            'input_ids':input_ids,
+            'max_new_tokens': 100,
+            'pad_token_id':0,
+            'use_cache' : True
+        }
         if lookup:
-            config = {'input_ids':input_ids, 'max_new_tokens': 100, 'pad_token_id':0, 'use_cache' : True, 'do_sample':True, 'temperature':0.9, 'prompt_lookup_num_tokens':3}
+            config = {
+                'input_ids':input_ids,
+                'max_new_tokens': 100,
+                'pad_token_id':0,
+                'use_cache' : True,
+                'do_sample':True,
+                'temperature':0.9,
+                'prompt_lookup_num_tokens':3
+            }
         output = model.generate(**config)
 
     for i in tqdm.tqdm(range(len(prompts)), "eval"):
         input_ids = prompts[i]
-        config = {'input_ids':input_ids, 'max_new_tokens': 100, 'pad_token_id':0, 'use_cache' : True}
+        config = {
+            'input_ids':input_ids,
+            'max_new_tokens': 100,
+            'pad_token_id':0,
+            'use_cache' : True,
+            'repetition_penalty':1.2,
+            'do_sample':True,
+            'temperature':0.9,
+            'top_k':40
+        }
         if lookup:
-            config = {'input_ids':input_ids, 'max_new_tokens': 100, 'pad_token_id':0, 'use_cache' : True, 'do_sample':True, 'temperature':0.9, 'prompt_lookup_num_tokens':3}
+            config = {
+                'input_ids':input_ids,
+                'max_new_tokens': 100,
+                'pad_token_id':0,
+                'use_cache' : True,
+                'do_sample':True,
+                'temperature':0.9,
+                'prompt_lookup_num_tokens':3,
+                'repetition_penalty':1.2,
+                'top_k':40
+            }
+        
+        # The repetition penalty, sampling, and top_k parameters were for experimentation with the INT2 quantized versions, so don't use those for the unquantized version
+        if model_type == "1B-BF16":
+            config = {
+                'input_ids':input_ids,
+                'max_new_tokens': 100,
+                'pad_token_id':0,
+                'use_cache' : True
+            }
+            if lookup:
+                config = {
+                    'input_ids':input_ids,
+                    'max_new_tokens': 100,
+                    'pad_token_id':0,
+                    'use_cache' : True,
+                    'do_sample':True,
+                    'temperature':0.9,
+                    'prompt_lookup_num_tokens':3
+                }
+
         if DEVICE == "cuda":
             torch.cuda.synchronize()
         start = time.perf_counter()
@@ -144,6 +222,7 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
         total_time_s += end - start
 
         prompt_len = input_ids.shape[-1]
+        tokens += len(output[0][prompt_len:])
 
         eot_id = "<|eot_id|>"
 
@@ -155,11 +234,12 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
         if output_decoded[len(output_decoded)-len(eot_id):len(output_decoded)] == eot_id:
             output_decoded = output_decoded[:len(output_decoded) - len(eot_id)]
 
-        tokens += len(output_decoded)
-        #print("output_decoded:" + output_decoded)
+        final_prompts.append(original_prompts[i])
+        final_decoded.append(output_decoded)
 
-        with open(response_path, 'a') as the_file:
-            data = {"prompt": original_prompts[i], "response": output_decoded}
+    with open(response_path, 'a') as the_file:
+        for i in range(len(final_prompts)):
+            data = {"prompt": final_prompts[i], "response": final_decoded[i]}
             the_file.write(f"{json.dumps(data)}\n")
 
     print("Avg Time Per Token (s):", total_time_s / tokens)
@@ -193,5 +273,5 @@ if __name__=='__main__':
         eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
     else:
         print(f"generating and saving response at location: {args.response}...")
-        generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct)
+        generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct, args.model)
 

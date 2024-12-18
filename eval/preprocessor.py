@@ -83,27 +83,29 @@ def get_preprocessed_ifeval_data(tokenizer, instruct, tokenize=True):
 
     for i in range(len(prompts)):
         if not instruct:
-            preprocessed_prompts.append(tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE))
-
+            if tokenize:
+                preprocessed_prompts.append(tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE))
+            else:
+                # If there's no need to apply a template or anything specific to the original tokenizer, don't need to do anything here
+                preprocessed_prompts.append(prompts[i])
         else:
-            for prompt in prompts:
-                wrapped_prompt = [
-                    {
-                        "role": "user",
-                        "content": prompt
-                    }
-                ]
-                if tokenize:
-                    preprocessed_prompt = tokenizer.apply_chat_template(
-                                                    wrapped_prompt,
-                                                    return_tensors="pt"
-                                                ).to(DEVICE)
-                else:
-                    preprocessed_prompt = tokenizer.apply_chat_template(
-                                                    wrapped_prompt,
-                                                    tokenize = False
-                                                )
-                preprocessed_prompts.append(preprocessed_prompt)
+            wrapped_prompt = [
+                {
+                    "role": "user",
+                    "content": prompts[i]
+                }
+            ]
+            if tokenize:
+                preprocessed_prompt = tokenizer.apply_chat_template(
+                                                wrapped_prompt,
+                                                return_tensors="pt"
+                                            ).to(DEVICE)
+            else:
+                preprocessed_prompt = tokenizer.apply_chat_template(
+                                                wrapped_prompt,
+                                                tokenize = False
+                                            )
+            preprocessed_prompts.append(preprocessed_prompt)
     return preprocessed_prompts, prompts
 
 def get_preprocessed_dummy_prompts_and_labels(tokenizer, tokenize=True):
