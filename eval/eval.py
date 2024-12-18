@@ -269,9 +269,32 @@ if __name__=='__main__':
         original_tokenizer = AutoTokenizer.from_pretrained(args.original_model)
     prompts, labels = get_prompts_and_labels(args.model, tokenizer, original_tokenizer, args.dataset, args.instruct)
 
-    if not args.response:
-        eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
+    if DEVICE == "cuda" or DEVICE == "cpu":
+        with torch.profiler.profile(
+                activities=[
+                    torch.profiler.ProfilerActivity.CPU,
+                    torch.profiler.ProfilerActivity.CUDA
+                ],
+                record_shapes=True,
+                profile_memory=True,
+                with_stack=True
+        ) as p:
+            with torch.profiler.record_function("model_inference"):
+                if not args.response:
+                    eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
+                else:
+                    print(f"generating and saving response at location: {args.response}...")
+                    generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct, args.model)
+
+        print(p.key_averages().table(sort_by=DEVICE + "_time_total"))
+
     else:
-        print(f"generating and saving response at location: {args.response}...")
-        generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct, args.model)
+        with torch.mps.profiler.profile():
+            if not args.response:
+                eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
+            else:
+                print(f"generating and saving response at location: {args.response}...")
+                generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct,
+                                  args.model)
+
 
