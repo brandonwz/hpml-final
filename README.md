@@ -55,6 +55,12 @@ Quantized model: ```$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED
 Quantized model with Prompt Lookup Decoding: ```$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset toxic --lookup``` <p>
 
 ### Evaluating Llama Instruct 3.2 1B on IFEval
+`$ cd eval` <p>
+Unquantized model: `$ python eval.py --model 1B-BF16 --path Llama-3.2-1B --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl` <p>
+Quantized model: `$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT>   --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl` <p>
+Quantized model with Prompt Lookup Decoding: `$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT>   --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl --lookup` <p>
+`$ cd ..` <p>
+`$ python3 -m instruction_following_eval.evaluation_main --input_data=./instruction_following_eval/data/input_data.jsonl --input_response_data=./eval/result/Llama-3.2-1B_ifeval/response.jsonl --output_dir=./eval/result/Llama-3.2-1B_ifeval/`
 
 ## Results
 
