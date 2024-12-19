@@ -46,21 +46,27 @@ pip3 install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url http
 ## Evaluation
 
 ### Monitoring GPU during Evaluation
-`watch -n 1 nvidia-smi`
+```
+watch -n 1 nvidia-smi
+```
 
 ### Evaluating Llama Guard 3 1B on ToxicChat
-`$ cd eval` <p>
-Unquantized model: `$ python eval.py --model 1B-BF16 --path Llama-Guard-3-1B --dataset toxic`<p>
-Quantized model: ```$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset toxic``` <p>
-Quantized model with Prompt Lookup Decoding: ```$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset toxic --lookup``` <p>
+```
+$ cd eval
+[Unquantized model] $ python eval.py --model 1B-BF16 --path Llama-Guard-3-1B --dataset toxic
+[Quantized model] $ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset toxic
+[Quantized model with Prompt Lookup Decoding] $ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset toxic --lookup
+```
 
 ### Evaluating Llama Instruct 3.2 1B on IFEval
-`$ cd eval` <p>
-Unquantized model: `$ python eval.py --model 1B-BF16 --path Llama-3.2-1B --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl` <p>
-Quantized model: `$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT>   --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl` <p>
-Quantized model with Prompt Lookup Decoding: `$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT>   --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl --lookup` <p>
-`$ cd ..` <p>
-`$ python3 -m instruction_following_eval.evaluation_main --input_data=./instruction_following_eval/data/input_data.jsonl --input_response_data=./eval/result/Llama-3.2-1B_ifeval/response.jsonl --output_dir=./eval/result/Llama-3.2-1B_ifeval/`
+```
+$ cd eval
+[Unquantized model] $ python eval.py --model 1B-BF16 --path Llama-3.2-1B --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl 
+[Quantized model] $ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT>   --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl`
+[Quantized model with Prompt Lookup Decoding] $ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT>   --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset ifeval --response result/Llama-3.2-1B_ifeval/response.jsonl --lookup
+$ cd ..
+$ python3 -m instruction_following_eval.evaluation_main --input_data=./instruction_following_eval/data/input_data.jsonl --input_response_data=./eval/result/Llama-3.2-1B_ifeval/response.jsonl --output_dir=./eval/result/Llama-3.2-1B_ifeval/
+```
 
 
 
