@@ -1,5 +1,6 @@
 DEVICE="cuda"
 OUTPUT_OFFSET = 2
+INSTRUCT_OFFSET = 4
 SAFE_STR = "safe"
 UNSAFE_STR = "unsafe"
 DBG = False
@@ -17,3 +18,4 @@ CATEGORIES = {
                 "S10":"self-harm/instructions",
                 "S11":"hate/threatening"
             }
+EOT_ID = "<|eot_id|>"

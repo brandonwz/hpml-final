@@ -6,9 +6,10 @@ import torch
 import time
 import tqdm
 
-from constants import DEVICE, OUTPUT_OFFSET, SAFE_STR, UNSAFE_STR, DBG, MAX_EVAL_ITERATIONS
+from constants import DEVICE, OUTPUT_OFFSET, INSTRUCT_OFFSET, SAFE_STR, UNSAFE_STR, DBG, MAX_EVAL_ITERATIONS, EOT_ID
+from generate_configs import get_guard3_configs, get_guard3_lookup_configs, get_instruct_configs, get_instruct_lookup_configs, get_int2_instruct_configs, get_int2_instruct_lookup_configs
 
-from preprocessor import get_preprocessed_dummy_prompts_and_labels, get_preprocessed_toxic_chat_data, get_preprocessed_mutox_data, get_preprocessed_ifeval_data
+from preprocessor import get_preprocessed_dummy_prompts_and_labels, get_preprocessed_toxic_chat_data, get_preprocessed_ifeval_data
 from test_quant import get_int2_model
 
 def load_model_and_tokenizer(model_type, path, w_bit, load_quant, original_model):
@@ -38,8 +39,6 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, i
     if model_type == "1B-BF16":
         if dataset == 'dummy':
             prompts, labels = get_preprocessed_dummy_prompts_and_labels(tokenizer)
-        elif dataset == 'mutox':
-            prompts, labels = get_preprocessed_mutox_data(tokenizer)
         elif dataset == 'ifeval':
             prompts, labels = get_preprocessed_ifeval_data(tokenizer, instruct)
         else:
@@ -47,8 +46,6 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, i
     else:
         if dataset == 'dummy':
             prompts, labels = get_preprocessed_dummy_prompts_and_labels(original_tokenizer, tokenize=False)
-        elif dataset == 'mutox':
-            prompts, labels = get_preprocessed_mutox_data(original_tokenizer, tokenize=False)
         elif dataset == 'ifeval':
             prompts, labels = get_preprocessed_ifeval_data(original_tokenizer, instruct, tokenize=False)
         else:
@@ -70,41 +67,16 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
 
     for i in tqdm.tqdm(range(100), "warmup"):
         input_ids = prompts[0]
-        config = {
-            'input_ids':input_ids,
-            'max_new_tokens':100,
-            'pad_token_id':0,
-            'use_cache' : True
-        }
+        config = get_guard3_configs(input_ids)
         if lookup:
-            config = {
-                'input_ids':input_ids,
-                'max_new_tokens':100,
-                'pad_token_id':0,
-                'use_cache' : True,
-                'do_sample':True,
-                'temperature':0.9,
-                'prompt_lookup_num_tokens':3
-            }
+            config = get_guard3_lookup_configs(input_ids)
         output = model.generate(**config)
 
     for i in tqdm.tqdm(range(len(prompts)), "eval"):
         input_ids = prompts[i]
-        config = {
-            'input_ids':input_ids,
-            'max_new_tokens':100,
-            'pad_token_id':0,
-            'use_cache' : True
-        }
+        config = get_guard3_configs(input_ids)
         if lookup:
-            config = {
-                'input_ids':input_ids,
-                'max_new_tokens':100,
-                'pad_token_id':0,
-                'use_cache' : True,
-                'do_sample':True,
-                'temperature':0.9,
-                'prompt_lookup_num_tokens':3}
+            config = get_guard3_lookup_configs(input_ids)
         if DEVICE == "cuda":
             torch.cuda.synchronize()
         start = time.perf_counter()
@@ -146,69 +118,24 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
     final_prompts = []
     final_decoded = []
 
-    for i in tqdm.tqdm(range(1), "warmup"):
+    for i in tqdm.tqdm(range(100), "warmup"):
         input_ids = prompts[0]
-        config = {
-            'input_ids':input_ids,
-            'max_new_tokens': 100,
-            'pad_token_id':0,
-            'use_cache' : True
-        }
+        config = get_instruct_configs(input_ids)
         if lookup:
-            config = {
-                'input_ids':input_ids,
-                'max_new_tokens': 100,
-                'pad_token_id':0,
-                'use_cache' : True,
-                'do_sample':True,
-                'temperature':0.9,
-                'prompt_lookup_num_tokens':3
-            }
+            config = get_instruct_lookup_configs(input_ids)
         output = model.generate(**config)
 
     for i in tqdm.tqdm(range(len(prompts)), "eval"):
         input_ids = prompts[i]
-        config = {
-            'input_ids':input_ids,
-            'max_new_tokens': 100,
-            'pad_token_id':0,
-            'use_cache' : True,
-            'repetition_penalty':1.2,
-            'do_sample':True,
-            'temperature':0.9,
-            'top_k':40
-        }
+        config = get_int2_instruct_configs(input_ids)
         if lookup:
-            config = {
-                'input_ids':input_ids,
-                'max_new_tokens': 100,
-                'pad_token_id':0,
-                'use_cache' : True,
-                'do_sample':True,
-                'temperature':0.9,
-                'prompt_lookup_num_tokens':3,
-                'repetition_penalty':1.2,
-                'top_k':40
-            }
+            config = get_int2_instruct_lookup_configs(input_ids)
         
         # The repetition penalty, sampling, and top_k parameters were for experimentation with the INT2 quantized versions, so don't use those for the unquantized version
         if model_type == "1B-BF16":
-            config = {
-                'input_ids':input_ids,
-                'max_new_tokens': 100,
-                'pad_token_id':0,
-                'use_cache' : True
-            }
+            config = get_instruct_configs(input_ids)
             if lookup:
-                config = {
-                    'input_ids':input_ids,
-                    'max_new_tokens': 100,
-                    'pad_token_id':0,
-                    'use_cache' : True,
-                    'do_sample':True,
-                    'temperature':0.9,
-                    'prompt_lookup_num_tokens':3
-                }
+                config = get_instruct_lookup_configs(input_ids)
 
         if DEVICE == "cuda":
             torch.cuda.synchronize()
@@ -224,10 +151,10 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
         prompt_len = input_ids.shape[-1]
         tokens += len(output[0][prompt_len:])
 
-        eot_id = "<|eot_id|>"
+        eot_id = EOT_ID
 
         if instruct:
-            output_start_idx = prompt_len + 4
+            output_start_idx = prompt_len + INSTRUCT_OFFSET
         else:
             output_start_idx = prompt_len
         output_decoded = tokenizer.decode(output[0][output_start_idx:])
@@ -249,7 +176,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser(description="model evaluation parser")
     parser.add_argument("--model", help="which model to use. options: 1B-BF16, 1B-INT2")
     parser.add_argument("--path", help="model path")
-    parser.add_argument("--dataset", help="dataset options: dummy|toxic|mutox|ifeval")
+    parser.add_argument("--dataset", help="dataset options: dummy|toxic|ifeval")
     # Only relevant if --model is 1B-INT2
     parser.add_argument("--w_bit", type=int, default=None)
     parser.add_argument("--lookup", action="store_true")
@@ -257,6 +184,7 @@ if __name__=='__main__':
     parser.add_argument("--original_model", type=str, default=None, help="original model path (for the tokenizer)")
     parser.add_argument("--response", help="response save location")
     parser.add_argument("--instruct", help="to indicate if the model is an instruct or not", action="store_true")
+    parser.add_argument("--profile", help="whether to enable pytorch profiling", action="store_true")
 
     args = parser.parse_args()
 
@@ -269,7 +197,7 @@ if __name__=='__main__':
         original_tokenizer = AutoTokenizer.from_pretrained(args.original_model)
     prompts, labels = get_prompts_and_labels(args.model, tokenizer, original_tokenizer, args.dataset, args.instruct)
 
-    if DEVICE == "cuda" or DEVICE == "cpu":
+    if (DEVICE == "cuda" or DEVICE == "cpu") and args.profile:
         with torch.profiler.profile(
                 activities=[
                     torch.profiler.ProfilerActivity.CPU,
@@ -289,12 +217,11 @@ if __name__=='__main__':
         print(p.key_averages().table(sort_by=DEVICE + "_time_total"))
 
     else:
-        with torch.mps.profiler.profile():
-            if not args.response:
-                eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
-            else:
-                print(f"generating and saving response at location: {args.response}...")
-                generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct,
-                                  args.model)
+        if not args.response:
+            eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
+        else:
+            print(f"generating and saving response at location: {args.response}...")
+            generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct,
+                                args.model)
 
 

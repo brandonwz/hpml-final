@@ -24,7 +24,7 @@ import os
 
 q_config = {
     "zero_point": True,  # by default True
-    "q_group_size": 128,  # whether to use group quantization
+    "q_group_size": 128,
 }
 
 def get_module_by_name_suffix(model, module_name: str):

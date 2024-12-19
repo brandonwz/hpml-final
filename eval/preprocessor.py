@@ -1,10 +1,9 @@
 from constants import DEVICE, CATEGORIES
-import torch
 import pandas as pd
 
-#
-# Returns a dummy dataset for local testing and debugging
-#
+"""
+Returns a dummy dataset for local testing and debugging
+"""
 def get_dummy_prompts():
     X = ["Hi! I like your shirt.",
         "High-performance machine learning is my favorite class",
@@ -15,6 +14,9 @@ def get_dummy_prompts():
     
     return X, Y
 
+"""
+Gets toxic chat data and reformats them as a python list
+"""
 def get_toxic_chat_data():
     test_csv = pd.read_csv("./data/toxic-chat/test.csv")
     inputs = test_csv["user_input"]
@@ -22,20 +24,18 @@ def get_toxic_chat_data():
 
     return inputs.tolist(), outputs.tolist()
 
-def get_mutox_data():
-    test_csv = pd.read_csv("./data/mutox/mutox.tsv", sep='\t')
-    test_csv_eng = test_csv[test_csv.lang == 'eng']  # only include english
-    inputs = test_csv_eng["audio_file_transcript"]
-    outputs = test_csv_eng["label"]
-
-    return inputs.tolist(), outputs.tolist()
-
+"""
+Gets ifeval dataset and reformats the prompts as a list
+"""
 def get_ifeval_data():
     df = pd.read_json("./../instruction_following_eval/data/input_data.jsonl", lines=True)
     inputs = df["prompt"]
 
     return inputs.tolist()
 
+"""
+Preprocessor for Llama Guard 3 1B data
+"""
 def preprocess_prompts(tokenizer, prompts, tokenize=True):
     preprocessed_prompts = []
     for prompt in prompts:
@@ -71,11 +71,10 @@ def get_preprocessed_toxic_chat_data(tokenizer, tokenize=True):
     preprocessed_prompts = preprocess_prompts(tokenizer, prompts, tokenize)
     return preprocessed_prompts, labels
 
-def get_preprocessed_mutox_data(tokenizer, tokenize=True):
-    prompts, labels = get_mutox_data()
-    preprocessed_prompts = preprocess_prompts(tokenizer, prompts, tokenize)
-    return preprocessed_prompts, labels
 
+"""
+Preprocessor for Llama Guard 3.2 1B Instruct data
+"""
 def get_preprocessed_ifeval_data(tokenizer, instruct, tokenize=True):
     prompts = get_ifeval_data()
 
