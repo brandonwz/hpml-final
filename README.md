@@ -22,6 +22,10 @@
 ### Evaluating Llama Guard 3 1B on ToxicChat
 `$ cd eval` <p>
 Unquantized model: `$ python eval.py --model 1B-BF16 --path Llama-Guard-3-1B --dataset toxic`<p>
+Quantized model: `$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset toxic`
+Quantized model with Prompt Lookup Decoding: `$ python eval.py --model 1B-INT2 --path <PATH_TO_UNQUANTIZED_MODEL_POST_QAT> --w_bit 2 --load_quant <PATH_TO_QUANTIZED_MODEL_CHECKPOINT> --original_model <PATH_TO_ORIGINAL_UNQUANTIZED_MODEL> --dataset toxic --lookup`
+
+### Evaluating Llama Instruct 3.2 1B on IFEval
 
 ## Results
 
