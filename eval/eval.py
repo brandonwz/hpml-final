@@ -6,7 +6,7 @@ import torch
 import time
 import tqdm
 
-from constants import DEVICE, OUTPUT_OFFSET, INSTRUCT_OFFSET, SAFE_STR, UNSAFE_STR, DBG, MAX_EVAL_ITERATIONS, EOT_ID
+from constants import DEVICE, OUTPUT_OFFSET, INSTRUCT_OFFSET, SAFE_STR, UNSAFE_STR, DBG, MAX_EVAL_ITERATIONS, EOT_ID, PROFILE_EVAL_LEN
 from generate_configs import get_guard3_configs, get_guard3_lookup_configs, get_instruct_configs, get_instruct_lookup_configs, get_int2_instruct_configs, get_int2_instruct_lookup_configs
 
 from preprocessor import get_preprocessed_dummy_prompts_and_labels, get_preprocessed_toxic_chat_data, get_preprocessed_ifeval_data
@@ -58,7 +58,7 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, i
 
     return prompts, labels
 
-def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
+def eval_and_bench_model(model, tokenizer, prompts, labels, lookup, profile=False):
     model.eval()
     total_time_s = 0.0
     iters = 0
@@ -72,7 +72,10 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup):
             config = get_guard3_lookup_configs(input_ids)
         output = model.generate(**config)
 
-    for i in tqdm.tqdm(range(len(prompts)), "eval"):
+    eval_len = len(prompts)
+    if profile:
+        eval_len = min(eval_len, PROFILE_EVAL_LEN)
+    for i in tqdm.tqdm(range(eval_len), "eval"):
         input_ids = prompts[i]
         config = get_guard3_configs(input_ids)
         if lookup:
@@ -209,10 +212,10 @@ if __name__=='__main__':
         ) as p:
             with torch.profiler.record_function("model_inference"):
                 if not args.response:
-                    eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup)
+                    eval_and_bench_model(model, tokenizer, prompts, labels, args.lookup, profile=True)
                 else:
-                    print(f"generating and saving response at location: {args.response}...")
-                    generate_response(model, tokenizer, prompts, labels, args.lookup, args.response, args.instruct, args.model)
+                    print("Profiler not supported for this eval type.")
+                    exit(1)
 
         print(p.key_averages().table(sort_by=DEVICE + "_time_total"))
 

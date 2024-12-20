@@ -19,3 +19,6 @@ CATEGORIES = {
                 "S11":"hate/threatening"
             }
 EOT_ID = "<|eot_id|>"
+
+# May need to be set lower based off system memory
+PROFILE_EVAL_LEN = 100
