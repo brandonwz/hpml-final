@@ -6,7 +6,9 @@ This is our final project for COMS6998 High Performance Machine Learning. We exp
 * `eval`: This is where the majority of our inference code lives. 'eval.py' is our main inference engine, and the rest are helper files (e.g. for preprocessing or model loading). `test_quant.py` loads the 2-bit model, adapted from https://github.com/mit-han-lab/llm-awq/blob/main/awq/entry.py
 * `instruction_following_eval`: a copy of the IFEval data and evaluation code, so that we can properly generate instruction following scores for our generated JSON files. The original can be found here: https://github.com/google-research/google-research/tree/master/instruction_following_eval
 
-BitDistiller and IFEval are additionally cited in our report.
+We also include ToxicChat data from: https://huggingface.co/datasets/lmsys/toxic-chat
+
+BitDistiller, IFEval and ToxicChat are additionally cited in our report.
 
 ## Prerequisites
 
@@ -30,7 +32,8 @@ This is an example of how to setup an instance and copy a file over.
 3) `ssh -i <path to pem>/my-ssh-key.pem ubuntu@<gpu ip>` <p>
 
 ### Training on LambdaLabs GPU:
-This is the QAT step for BitDistiller. It assumes asymmetric clippings and teacher model dataset have all been generated, and these are included in our repo. For more information on how to generate them, please see the README in `BitDistller-Fork`.
+This is the QAT step for BitDistiller. It assumes asymmetric clippings and teacher model dataset have all been generated, and these are included in our repo. For more information on how to generate them, please see the README in `BitDistller-Fork`. <p>
+
 0) `python -m venv venv; . venv/bin/activate` <p>
 1) Clone this repository (hpml-final) <p>
 2) `cd hpml-final/BitDistiller-Fork/train` <p>
