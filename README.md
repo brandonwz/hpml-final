@@ -11,7 +11,7 @@ BitDistiller and IFEval are additionally cited in our report.
 ## Prerequisites
 
 ### Packages
-1) All the requirements in requirements.txt in BitDistiller-Fork
+1) All the requirements in requirement.txt in BitDistiller-Fork (install with `pip install -r requirement.txt`)
 2) `pip install wandb` to run the wandb upload script
 
 ### Models
@@ -54,6 +54,13 @@ Upgrade the torch version as:
 ```
 pip3 install torch==2.3.1 torchvision==0.18.1 torchaudio==2.3.1 --index-url https://download.pytorch.org/whl/test/cu121
 ```
+
+### Uploading Training Data to Weights and Biases
+
+After training, the `save` folder will have `trainer_state.json`. Let this be <PATH_TO_JSON>.
+
+Then do:
+`python convert_train_log_to_wandb.py --log_path <PATH_TO_JSON>` and login to your account when prompted.
 
 ## Evaluation
 
