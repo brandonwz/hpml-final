@@ -1,4 +1,4 @@
-transformers
+transformers==4.45.2
 datasets
 deepspeed
 sentencepiece
