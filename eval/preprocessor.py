@@ -1,3 +1,7 @@
+"""
+Preprocessing helper functions for the dummy dataset, ToxicChat, and IFEval. 
+"""
+
 from constants import DEVICE, CATEGORIES
 import pandas as pd
 
@@ -34,7 +38,8 @@ def get_ifeval_data():
     return inputs.tolist()
 
 """
-Preprocessor for Llama Guard 3 1B data
+Preprocessor for Llama Guard 3 1B data, returns tokenized input (either text or as input ids).
+It applies the chat template provided in the Llama Guard 3 1B tokenizer configuration.
 """
 def preprocess_prompts(tokenizer, prompts, tokenize=True):
     preprocessed_prompts = []
@@ -73,7 +78,8 @@ def get_preprocessed_toxic_chat_data(tokenizer, tokenize=True):
 
 
 """
-Preprocessor for Llama Guard 3.2 1B Instruct data
+Preprocessor for Llama Guard 3.2 1B Instruct data. Similar to Llama Guard 3 1B preprocessor, except the chat template is
+slightly different.
 """
 def get_preprocessed_ifeval_data(tokenizer, instruct, tokenize=True):
     prompts = get_ifeval_data()
@@ -105,9 +111,12 @@ def get_preprocessed_ifeval_data(tokenizer, instruct, tokenize=True):
                                                 tokenize = False
                                             )
             preprocessed_prompts.append(preprocessed_prompt)
-    return preprocessed_prompts, prompts
+    return preprocessed_prompts, prompts #the second return item doesn't actually matter, we don't use them for IFEval in eval.py
+
 
 def get_preprocessed_dummy_prompts_and_labels(tokenizer, tokenize=True):
     prompts, labels = get_dummy_prompts()
+    # Dummy dataset is intended for use with Llama Guard 3 1B so it uses the
+    # Llama Guard 3 1B preprocessor
     preprocessed_prompts = preprocess_prompts(tokenizer, prompts, tokenize)
     return preprocessed_prompts, labels

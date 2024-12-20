@@ -1,3 +1,8 @@
+"""
+Main evaluation engine for the project. Contains benchmarking code for quantized and unquantized models
+for the Llama Guard 3 1B and Llama 3.2 Instruct 1B variants, across ToxicChat and IFEval respectively.
+"""
+
 import argparse
 import json
 
@@ -12,6 +17,9 @@ from generate_configs import get_guard3_configs, get_guard3_lookup_configs, get_
 from preprocessor import get_preprocessed_dummy_prompts_and_labels, get_preprocessed_toxic_chat_data, get_preprocessed_ifeval_data
 from test_quant import get_int2_model
 
+"""
+Helper function to load the appropriate model and its tokenizer
+"""
 def load_model_and_tokenizer(model_type, path, w_bit, load_quant, original_model):
     model = None
     tokenizer = None
@@ -33,6 +41,9 @@ def load_model_and_tokenizer(model_type, path, w_bit, load_quant, original_model
 
     return model, tokenizer
 
+"""
+Helper function to get prompts and labels in preparation to pass into model.generate
+"""
 def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, instruct):
     prompts = None
     labels = None
@@ -44,6 +55,8 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, i
         else:
             prompts, labels = get_preprocessed_toxic_chat_data(tokenizer)
     else:
+        # We use the original model tokenizer to get the prompts in text form with the chat template and then encode
+        # them with the tokenizer from the quantized model
         if dataset == 'dummy':
             prompts, labels = get_preprocessed_dummy_prompts_and_labels(original_tokenizer, tokenize=False)
         elif dataset == 'ifeval':
@@ -51,13 +64,15 @@ def get_prompts_and_labels(model_type, tokenizer, original_tokenizer, dataset, i
         else:
             prompts, labels = get_preprocessed_toxic_chat_data(original_tokenizer, tokenize=False)
 
-        # We use the original model tokenizer to get the prompts in text form and then encode
-        # them with the tokenizer from the quantized model
         for i in range(len(prompts)):
             prompts[i] = tokenizer.encode(prompts[i], return_tensors="pt").to(DEVICE)
 
     return prompts, labels
 
+"""
+Gets inference times and Llama Guard 3 1B binary accuracy scores. Intended for use with
+the ToxicChat and dummy datasets.
+"""
 def eval_and_bench_model(model, tokenizer, prompts, labels, lookup, profile=False):
     model.eval()
     total_time_s = 0.0
@@ -65,6 +80,7 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup, profile=Fals
     correct = 0
     tokens = 0
 
+    # Warmup phase, INT2 models use triton autotune so let it run for a bit before benchmarking
     for i in tqdm.tqdm(range(100), "warmup"):
         input_ids = prompts[0]
         config = get_guard3_configs(input_ids)
@@ -73,6 +89,8 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup, profile=Fals
         output = model.generate(**config)
 
     eval_len = len(prompts)
+
+    # The profiler can run out of memory if left for too long, so we cap it to a specific number of iterations if enabled
     if profile:
         eval_len = min(eval_len, PROFILE_EVAL_LEN)
     for i in tqdm.tqdm(range(eval_len), "eval"):
@@ -80,9 +98,12 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup, profile=Fals
         config = get_guard3_configs(input_ids)
         if lookup:
             config = get_guard3_lookup_configs(input_ids)
+
+        # Synchronize cuda kernels before starting and ending the counter for accurate measurements
         if DEVICE == "cuda":
             torch.cuda.synchronize()
         start = time.perf_counter()
+
         output = model.generate(**config)
 
         if DEVICE == "cuda":
@@ -114,6 +135,10 @@ def eval_and_bench_model(model, tokenizer, prompts, labels, lookup, profile=Fals
     print("Avg Time Per Token (s):", total_time_s / tokens)
     print("Binary Accuracy:", correct / iters)
 
+"""
+Gets the inference speed and jsonl file for Llama 3.2 Instruct 1B, intended for use with IFEval benchmarking code.
+Not intended for use with ToxicChat/dummy datasets. The jsonl file is saved to the filepath provided in response_path.
+"""
 def generate_response(model, tokenizer, prompts, original_prompts, lookup, response_path, instruct, model_type):
     total_time_s = 0.0
     tokens = 0
@@ -121,6 +146,7 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
     final_prompts = []
     final_decoded = []
 
+    # Warmup phase, INT2 models use triton autotune so let it run for a bit before benchmarking
     for i in tqdm.tqdm(range(100), "warmup"):
         input_ids = prompts[0]
         config = get_instruct_configs(input_ids)
@@ -140,9 +166,11 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
             if lookup:
                 config = get_instruct_lookup_configs(input_ids)
 
+        # Synchronize cuda kernels before starting and ending the counter for accurate measurements
         if DEVICE == "cuda":
             torch.cuda.synchronize()
         start = time.perf_counter()
+    
         output = model.generate(**config)
 
         if DEVICE == "cuda":
@@ -151,9 +179,11 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
 
         total_time_s += end - start
 
+        # Extract the output and decode it from id to text
         prompt_len = input_ids.shape[-1]
         tokens += len(output[0][prompt_len:])
 
+        # Format properly for IFEval benchmarking
         eot_id = EOT_ID
 
         if instruct:
@@ -167,6 +197,9 @@ def generate_response(model, tokenizer, prompts, original_prompts, lookup, respo
         final_prompts.append(original_prompts[i])
         final_decoded.append(output_decoded)
 
+    # Write it into a jsonl at the end in the correct format for IFEval. The IFEval score is not generated
+    # here, the jsonl is given back to the user and then passed into the IFEval evaluation framework. However,
+    # we still report inference speed scores.
     with open(response_path, 'a') as the_file:
         for i in range(len(final_prompts)):
             data = {"prompt": final_prompts[i], "response": final_decoded[i]}
@@ -180,13 +213,17 @@ if __name__=='__main__':
     parser.add_argument("--model", help="which model to use. options: 1B-BF16, 1B-INT2")
     parser.add_argument("--path", help="model path")
     parser.add_argument("--dataset", help="dataset options: dummy|toxic|ifeval")
+
     # Only relevant if --model is 1B-INT2
     parser.add_argument("--w_bit", type=int, default=None)
     parser.add_argument("--lookup", action="store_true")
     parser.add_argument("--load_quant", type=str, default=None, help="load quantized model")
     parser.add_argument("--original_model", type=str, default=None, help="original model path (for the tokenizer)")
+
+    # Used for Instruct 3.2 1B to generate IFEval jsonl for evaluation
     parser.add_argument("--response", help="response save location")
     parser.add_argument("--instruct", help="to indicate if the model is an instruct or not", action="store_true")
+
     parser.add_argument("--profile", help="whether to enable pytorch profiling", action="store_true")
 
     args = parser.parse_args()
@@ -196,6 +233,8 @@ if __name__=='__main__':
     print(model)
 
     original_tokenizer = None
+    # For the quantized model, we want to use the original model's tokenizer for the chat template. But the actual
+    # tokenization will be done using the quantized model's tokenizer.
     if args.original_model:
         original_tokenizer = AutoTokenizer.from_pretrained(args.original_model)
     prompts, labels = get_prompts_and_labels(args.model, tokenizer, original_tokenizer, args.dataset, args.instruct)

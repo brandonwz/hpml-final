@@ -1,5 +1,7 @@
 """
 Adapted from https://github.com/mit-han-lab/llm-awq/blob/main/awq/entry.py
+
+This model contains the code to intialize and load the quantized model + its tokenizer. 
 """
 
 import time
@@ -10,7 +12,6 @@ from transformers import AutoTokenizer, AutoModelForCausalLM, AutoConfig, modeli
 import sys
 sys.path.append("../BitDistiller-Fork")
 from quantization.quantizer import real_quantize_model_weight
-#from inference.modules.fused_mlp import make_fused_mlp
 
 import accelerate
 from accelerate import (
@@ -27,11 +28,18 @@ q_config = {
     "q_group_size": 128,
 }
 
+
+"""
+From AWQ entry.py
+"""
 def get_module_by_name_suffix(model, module_name: str):
     for name, module in model.named_modules():
         if name.endswith(module_name):
             return module
 
+"""
+From AWQ entry.py
+"""
 def simple_dispatch_model(model, device_map):
     from accelerate.hooks import add_hook_to_module, AlignDevicesHook
 
@@ -74,10 +82,15 @@ def simple_dispatch_model(model, device_map):
 
     return model
 
+"""
+Main INT2 model loader helper function based off the checkpoint path provided by user, modified from AWQ entry.py.
+Used in eval.py as part of the model loading code.
+"""
 def get_int2_model(model_path, w_bit, load_quant):
     config = AutoConfig.from_pretrained(model_path, trust_remote_code = True)
     config.use_cache = False
     print("Loading pre-computed quantized weights...")
+    # Prep the model to load in the quantized model checkpoint
     with init_empty_weights():
         model = AutoModelForCausalLM.from_config(
             config=config, torch_dtype=torch.float16, trust_remote_code=True

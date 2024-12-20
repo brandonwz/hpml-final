@@ -1,3 +1,8 @@
+"""
+Helper file that defines all the configs passed into generate
+for each model type to help modularize the code
+"""
+
 def get_guard3_configs(input_ids):
     return {
                 'input_ids':input_ids,

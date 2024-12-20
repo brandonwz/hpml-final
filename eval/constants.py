@@ -5,6 +5,8 @@ SAFE_STR = "safe"
 UNSAFE_STR = "unsafe"
 DBG = False
 MAX_EVAL_ITERATIONS = 100
+
+# From ToxicChat dataset
 CATEGORIES = {
                 "S1":"sexual",
                 "S2":"sexual/minors",
@@ -18,6 +20,7 @@ CATEGORIES = {
                 "S10":"self-harm/instructions",
                 "S11":"hate/threatening"
             }
+
 EOT_ID = "<|eot_id|>"
 
 # May need to be set lower based off system memory
